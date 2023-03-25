@@ -2,9 +2,8 @@ import type { Good, OfferType } from '@/types'
 import { defineStore } from 'pinia'
 import 'firebase/firestore';
 import { collection, onSnapshot, updateDoc, doc, writeBatch, query, where, getDocs } from "firebase/firestore";
-import { db } from '../js/firebase'
+import { db } from '../firebase/firestore'
 import { useDealsGoodsStore } from './dealsStore';
-import { useStorage } from '@vueuse/core';
 
 
 type StateShape = {
@@ -19,8 +18,8 @@ export const useGoodsStore = defineStore("goodsStore", {
     state: (): StateShape => ({
         list: [],
         filteredList: [],
-        searchTermForGood: '',
-        activeGoodOfferType: 'Все типы'
+        searchTermForGood: localStorage.getItem('searchTermForGood') || '',
+        activeGoodOfferType: localStorage.getItem('activeGoodOfferType') || ''
     }),
     getters: {
         getGoods(): Good[] {
@@ -48,10 +47,12 @@ export const useGoodsStore = defineStore("goodsStore", {
                     goods.push(doc.data());
                 })
                 this.list = goods
+                this.filterGoods()
             })
         },
         changeOfferType(offerType: OfferType) {
             this.activeGoodOfferType = offerType
+            localStorage.setItem('activeGoodOfferType', offerType)
         },
         filterGoods() {
             if (this.activeGoodOfferType === 'Все типы') {
@@ -64,31 +65,40 @@ export const useGoodsStore = defineStore("goodsStore", {
         },
         changeSearchTermForGood(term: string) {
             this.searchTermForGood = term
+            localStorage.setItem('searchTermForGood', term)
         },
         async updateGoodStatus(good: Good) {
-            const dealsGoodsStore = useDealsGoodsStore()
-            if (good.status === 'Добавить в сделки') {
-                dealsGoodsStore.addGoodToDeals(good)
-            } else if (good.status === 'Оплатить') {
-                if (good.dealId) {
-                    await updateDoc(doc(db, "deals", good.dealId), {
-                        status: 'Оплачено'
-                    });
+            try {
+                const dealsGoodsStore = useDealsGoodsStore()
+                if (good.status === 'Добавить в сделки') {
+                    dealsGoodsStore.addGoodToDeals(good)
+                } else if (good.status === 'Оплатить') {
+                    if (good.dealId) {
+                        await updateDoc(doc(db, "deals", good.dealId), {
+                            status: 'Оплачено'
+                        });
+                    }
                 }
+            } catch (error) {
+                console.error(error)
             }
         },
         async updateLikedGood(good: Good, isLiked: boolean) {
-            await updateDoc(doc(db, "goods", good.id), {
-                isLiked: isLiked
-            });
-            const dealsRef = query(collection(db, 'deals'), where('id', '==', good.id));
-            const querySnapshot = await getDocs(dealsRef);
+            try {
+                await updateDoc(doc(db, "goods", good.id), {
+                    isLiked: isLiked
+                });
+                const dealsRef = query(collection(db, 'deals'), where('id', '==', good.id));
+                const querySnapshot = await getDocs(dealsRef);
 
-            const batch = writeBatch(db);
-            querySnapshot.forEach((doc) => {
-                batch.update(doc.ref, { isLiked });
-            });
-            await batch.commit();
+                const batch = writeBatch(db);
+                querySnapshot.forEach((doc) => {
+                    batch.update(doc.ref, { isLiked });
+                });
+                await batch.commit();
+            } catch (error) {
+                console.error(error)
+            }
         }
     }
 })

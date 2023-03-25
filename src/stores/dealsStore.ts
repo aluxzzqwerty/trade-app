@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
-import { collection, onSnapshot, deleteDoc, doc, setDoc, updateDoc } from "firebase/firestore";
-import { db } from '../js/firebase'
+import { collection, onSnapshot, doc, setDoc } from "firebase/firestore";
+import { db } from '../firebase/firestore'
 import type { Good } from '@/types'
 import { useGoodsStore } from "./goodsStore";
 
@@ -40,27 +40,27 @@ export const useDealsGoodsStore = defineStore('DealsGoodsStore', {
             })
         },
         async addGoodToDeals(good: Good) {
-            const newGoodRef = doc(dealsCollectionRef);
-            await setDoc(newGoodRef, {
-                dealId: newGoodRef.id,
-                id: good.id,
-                title: good.title,
-                description: good.description,
-                location: good.location,
-                goodType: good.goodType,
-                seller: good.seller,
-                offerType: good.offerType,
-                cost: good.cost,
-                currency: good.currency,
-                isLiked: good.isLiked,
-                status: 'Оплатить',
-                quantity: good.quantity,
-                overallSum: good.overallSum,
-            });
-            
-        },
-        async removeGoodFromFavourites(id: string) {
-            await deleteDoc(doc(dealsCollectionRef, id));
+            try {
+                const newGoodRef = doc(dealsCollectionRef);
+                await setDoc(newGoodRef, {
+                    dealId: newGoodRef.id,
+                    id: good.id,
+                    title: good.title,
+                    description: good.description,
+                    location: good.location,
+                    goodType: good.goodType,
+                    seller: good.seller,
+                    offerType: good.offerType,
+                    cost: good.cost,
+                    currency: good.currency,
+                    isLiked: good.isLiked,
+                    status: 'Оплатить',
+                    quantity: good.quantity,
+                    overallSum: good.overallSum,
+                });
+            } catch (error) {
+                console.error(error)
+            }
         },
         filterGoods() {
             const goodsStore = useGoodsStore()
