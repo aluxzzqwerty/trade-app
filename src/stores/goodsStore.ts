@@ -19,7 +19,7 @@ export const useGoodsStore = defineStore("goodsStore", {
         list: [],
         filteredList: [],
         searchTermForGood: localStorage.getItem('searchTermForGood') || '',
-        activeGoodOfferType: localStorage.getItem('activeGoodOfferType') || ''
+        activeGoodOfferType: localStorage.getItem('activeGoodOfferType') || 'Все типы'
     }),
     getters: {
         getGoods(): Good[] {
